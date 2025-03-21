@@ -1,0 +1,6 @@
+INSERT INTO roles (name, description) VALUES ('ROLE_STUDENT', 'Student role for internship applications') ON CONFLICT (name) DO UPDATE SET description = EXCLUDED.description;
+INSERT INTO roles (name, description) VALUES ('ROLE_FACULTY_ADVISOR', 'Faculty advisor role for reviewing applications') ON CONFLICT (name) DO UPDATE SET description = EXCLUDED.description;
+INSERT INTO roles (name, description) VALUES ('ROLE_DEPARTMENT_COORDINATOR', 'Department coordinator role for managing department-level processes') ON CONFLICT (name) DO UPDATE SET description = EXCLUDED.description;
+INSERT INTO roles (name, description) VALUES ('ROLE_UNIVERSITY_COORDINATOR', 'University coordinator role for final approvals') ON CONFLICT (name) DO UPDATE SET description = EXCLUDED.description;
+INSERT INTO roles (name, description) VALUES ('ROLE_ADMIN', 'Administrator role for system management') ON CONFLICT (name) DO UPDATE SET description = EXCLUDED.description;
+INSERT INTO roles (name, description) VALUES ('ROLE_USER', 'Default user role') ON CONFLICT (name) DO UPDATE SET description = EXCLUDED.description; 
