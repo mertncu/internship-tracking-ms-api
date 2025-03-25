@@ -8,6 +8,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Getter
 @Setter
@@ -59,11 +60,40 @@ public class Internship {
     @Column(columnDefinition = "text")
     private String rejectionReason;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private boolean insuranceSupport;
+    private InternshipType type;
+
+    @Column(nullable = false)
+    private Boolean parentalInsuranceCoverage;
+
+    @Column
+    private String companyIBAN;
+
+    @Column
+    private String bankName;
+
+    @Column
+    private String bankBranch;
+
+    @Column(nullable = false)
+    private Boolean isPaid;
+
+    @OneToMany(mappedBy = "internship", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ApplicationWorkingDays> workingDays;
+
+    @OneToMany(mappedBy = "internship", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ApplicationApproval> approvals;
+
+    @OneToOne(mappedBy = "internship", cascade = CascadeType.ALL, orphanRemoval = true)
+    private SGKDeclaration sgkDeclaration;
+
+    @Column(nullable = false)
+    private Boolean insuranceSupport;
 
     @Column(columnDefinition = "text")
     private String description;
 
+    @Column
     private String documentPath;
 } 
