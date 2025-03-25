@@ -28,19 +28,20 @@ public class User implements UserDetails {
     private Long id;
 
     @Column(nullable = false)
-    private String firstName;
+    private String name;
 
     @Column(nullable = false)
-    private String lastName;
+    private String surname;
 
     @Column(nullable = false, unique = true)
     private String email;
 
+    @JsonIgnore
     @Column(nullable = false)
     private String password;
 
     @Column(nullable = false)
-    private String phoneNumber;
+    private String department;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -48,20 +49,7 @@ public class User implements UserDetails {
         joinColumns = @JoinColumn(name = "user_id"),
         inverseJoinColumns = @JoinColumn(name = "role_id")
     )
-    @Builder.Default
-    private Set<Role> roles = new HashSet<>();
-
-    @Builder.Default
-    private boolean enabled = true;
-
-    @Builder.Default
-    private boolean accountNonExpired = true;
-
-    @Builder.Default
-    private boolean accountNonLocked = true;
-
-    @Builder.Default
-    private boolean credentialsNonExpired = true;
+    private Set<Role> roles;
 
     @JsonIgnore
     @OneToMany(mappedBy = "student")
@@ -71,15 +59,23 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "facultyAdvisor")
     private List<Internship> advisorInternships;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "faculty_advisor_id")
+    private User facultyAdvisor;
+
+    @OneToMany(mappedBy = "facultyAdvisor")
+    private List<User> advisedStudents;
+
     @Override
     @JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return roles.stream()
                 .map(role -> new SimpleGrantedAuthority(role.getName()))
-                .collect(Collectors.toSet());
+                .collect(Collectors.toList());
     }
 
     @Override
+    @JsonIgnore
     public String getUsername() {
         return email;
     }
@@ -87,24 +83,24 @@ public class User implements UserDetails {
     @Override
     @JsonIgnore
     public boolean isAccountNonExpired() {
-        return accountNonExpired;
+        return true;
     }
 
     @Override
     @JsonIgnore
     public boolean isAccountNonLocked() {
-        return accountNonLocked;
+        return true;
     }
 
     @Override
     @JsonIgnore
     public boolean isCredentialsNonExpired() {
-        return credentialsNonExpired;
+        return true;
     }
 
     @Override
     @JsonIgnore
     public boolean isEnabled() {
-        return enabled;
+        return true;
     }
 } 
