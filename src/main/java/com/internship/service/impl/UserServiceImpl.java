@@ -4,12 +4,13 @@ import com.internship.dto.UserDto;
 import com.internship.entity.PasswordResetToken;
 import com.internship.entity.Role;
 import com.internship.entity.User;
+import com.internship.exception.ResourceNotFoundException;
 import com.internship.repository.PasswordResetTokenRepository;
 import com.internship.repository.RoleRepository;
 import com.internship.repository.UserRepository;
 import com.internship.service.EmailService;
 import com.internship.service.UserService;
-import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -19,13 +20,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
-@Transactional
+@RequiredArgsConstructor
 public class UserServiceImpl implements UserService, UserDetailsService {
 
     private final UserRepository userRepository;
@@ -34,18 +39,6 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final EmailService emailService;
 
-    public UserServiceImpl(UserRepository userRepository,
-                         RoleRepository roleRepository,
-                         @Lazy PasswordEncoder passwordEncoder,
-                         PasswordResetTokenRepository passwordResetTokenRepository,
-                         EmailService emailService) {
-        this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.passwordResetTokenRepository = passwordResetTokenRepository;
-        this.emailService = emailService;
-    }
-
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         return userRepository.findByEmail(username)
@@ -53,34 +46,66 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public User createUser(UserDto userDto) {
-        if (existsByEmail(userDto.getEmail())) {
+    @Transactional
+    public User createUser(User user) {
+        if (userRepository.existsByEmail(user.getEmail())) {
             throw new RuntimeException("Email already exists");
         }
 
-        User user = User.builder()
-                .firstName(userDto.getFirstName())
-                .lastName(userDto.getLastName())
-                .email(userDto.getEmail())
-                .password(passwordEncoder.encode(userDto.getPassword()))
-                .phoneNumber(userDto.getPhoneNumber())
-                .build();
-
-        Set<Role> roles = new HashSet<>();
-        if (userDto.getRoles() != null && !userDto.getRoles().isEmpty()) {
-            userDto.getRoles().forEach(roleName -> {
-                Role role = roleRepository.findByName(roleName)
-                        .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
-                roles.add(role);
-            });
-        } else {
-            Role userRole = roleRepository.findByName("ROLE_USER")
-                    .orElseThrow(() -> new RuntimeException("Default role (ROLE_USER) not found"));
-            roles.add(userRole);
+        if (user.getPassword() != null) {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
 
-        user.setRoles(roles);
+        // Convert Set<Role> to List<Role> if needed
+        if (user.getRoles() != null && user.getRoles() instanceof Set) {
+            List<Role> roleList = new ArrayList<>(user.getRoles());
+            user.setRoles(roleList);
+        }
+        
+        // Ensure user has at least one role
+        if (user.getRoles() == null || user.getRoles().isEmpty()) {
+            Role defaultRole = roleRepository.findByName("STUDENT")
+                    .orElseThrow(() -> new RuntimeException("Default role not found"));
+            user.setRoles(Collections.singletonList(defaultRole));
+        }
+
         return userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public User updateUser(Long id, User user) {
+        User existingUser = getUserById(id);
+
+        if (user.getFirstName() != null) {
+            existingUser.setFirstName(user.getFirstName());
+        }
+        if (user.getLastName() != null) {
+            existingUser.setLastName(user.getLastName());
+        }
+        if (user.getPassword() != null) {
+            existingUser.setPassword(passwordEncoder.encode(user.getPassword()));
+        }
+        if (user.getRoles() != null) {
+            existingUser.setRoles(user.getRoles());
+        }
+
+        return userRepository.save(existingUser);
+    }
+
+    @Override
+    @Transactional
+    public void deleteUser(Long id) {
+        if (!userRepository.existsById(id)) {
+            throw new ResourceNotFoundException("User not found with id: " + id);
+        }
+        userRepository.deleteById(id);
+    }
+
+    @Override
+    public User getUserById(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
     }
 
     @Override
@@ -89,32 +114,15 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public User getUserById(Long id) {
-        return userRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + id));
+    public List<User> getUsersByRole(String roleName) {
+        Role role = roleRepository.findByName(roleName)
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found: " + roleName));
+        return userRepository.findByRoles(role);
     }
 
     @Override
-    public void deleteUser(Long id) {
-        if (!userRepository.existsById(id)) {
-            throw new EntityNotFoundException("User not found with id: " + id);
-        }
-        userRepository.deleteById(id);
-    }
-
-    @Override
-    public User updateUserRoles(Long id, List<String> roleNames) {
-        User user = getUserById(id);
-        Set<Role> roles = new HashSet<>();
-        
-        roleNames.forEach(roleName -> {
-            Role role = roleRepository.findByName(roleName)
-                    .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
-            roles.add(role);
-        });
-
-        user.setRoles(roles);
-        return userRepository.save(user);
+    public Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email);
     }
 
     @Override
@@ -127,12 +135,15 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Bu email adresi ile kayıtlı kullanıcı bulunamadı."));
 
-        // Varolan tüm token'ları iptal et
-        List<PasswordResetToken> existingTokens = passwordResetTokenRepository.findByUserEmail(email);
-        existingTokens.forEach(token -> {
+        // Check existing tokens and invalidate them if needed
+        List<PasswordResetToken> existingTokens = new ArrayList<>();
+        Optional<PasswordResetToken> tokenOptional = passwordResetTokenRepository.findByUserEmail(email);
+        if (tokenOptional.isPresent()) {
+            PasswordResetToken token = tokenOptional.get();
             token.setUsed(true);
             passwordResetTokenRepository.save(token);
-        });
+            existingTokens.add(token);
+        }
 
         // Yeni token oluştur
         String token = UUID.randomUUID().toString();
@@ -165,5 +176,23 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         
         userRepository.save(user);
         passwordResetTokenRepository.save(passwordResetToken);
+    }
+
+    @Override
+    @Transactional
+    public User updateUserRoles(Long userId, List<String> roleNames) {
+        User user = getUserById(userId);
+        List<Role> roles = new ArrayList<>();
+
+        for (String roleName : roleNames) {
+            // Ensure role names have ROLE_ prefix
+            String normalizedRoleName = roleName.startsWith("ROLE_") ? roleName : "ROLE_" + roleName;
+            Role role = roleRepository.findByName(normalizedRoleName)
+                    .orElseThrow(() -> new ResourceNotFoundException("Role not found: " + normalizedRoleName));
+            roles.add(role);
+        }
+
+        user.setRoles(roles);
+        return userRepository.save(user);
     }
 } 

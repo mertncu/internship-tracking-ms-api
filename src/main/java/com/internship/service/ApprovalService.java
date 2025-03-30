@@ -2,11 +2,16 @@ package com.internship.service;
 
 import com.internship.entity.ApplicationApproval;
 import com.internship.entity.InternshipStatus;
+import com.internship.entity.User;
 
 import java.util.List;
 
 public interface ApprovalService {
-    ApplicationApproval createApproval(Long internshipId, Long approverId, String approverRole,InternshipStatus status, String comments, boolean isApproved);
+    ApplicationApproval createApproval(Long internshipId, Long approverId, InternshipStatus status, String comment);
+
+    List<ApplicationApproval> getApprovalsByInternship(Long internshipId);
+
+    List<ApplicationApproval> getApprovalsByApprover(User approver);
 
     List<ApplicationApproval> getApprovalsByInternshipId(Long internshipId);
 
@@ -18,5 +23,5 @@ public interface ApprovalService {
 
     boolean hasApprovalFromRole(Long internshipId, String approverRole);
 
-    ApplicationApproval updateApproval(Long approvalId, InternshipStatus newStatus, String comments);
+    ApplicationApproval updateApproval(Long approvalId, InternshipStatus status, String comment);
 } 

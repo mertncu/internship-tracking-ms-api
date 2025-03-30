@@ -19,13 +19,13 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'UNIVERSITY_COORDINATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'UNIVERSITY_COORDINATOR', 'DEPARTMENT_COORDINATOR')")
     public ResponseEntity<List<User>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'UNIVERSITY_COORDINATOR') or @userSecurity.isCurrentUser(#id)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'UNIVERSITY_COORDINATOR', 'DEPARTMENT_COORDINATOR') or @userSecurity.isCurrentUser(#id)")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }

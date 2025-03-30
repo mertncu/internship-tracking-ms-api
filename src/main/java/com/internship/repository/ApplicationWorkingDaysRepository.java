@@ -13,9 +13,9 @@ public interface ApplicationWorkingDaysRepository extends JpaRepository<Applicat
     
     List<ApplicationWorkingDays> findByInternshipId(Long internshipId);
     
-    List<ApplicationWorkingDays> findByInternshipIdAndDateBetween(Long internshipId, LocalDate startDate, LocalDate endDate);
+    // Tarihe göre filtreleme kaldırıldı, bu işlev servis katmanında yapılacak
     
-    @Query("SELECT COUNT(w) FROM ApplicationWorkingDays w WHERE w.internshipId = ?1 AND w.isWorkingDay = true")
+    @Query("SELECT COUNT(w) FROM ApplicationWorkingDays w WHERE w.internship.id = ?1")
     int countWorkingDaysByInternshipId(Long internshipId);
     
     void deleteByInternshipId(Long internshipId);

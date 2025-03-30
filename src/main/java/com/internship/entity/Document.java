@@ -3,35 +3,35 @@ package com.internship.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "sgk_declarations")
+@Table(name = "documents")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SGKDeclaration {
+public class Document {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "internship_id", nullable = false)
     private Internship internship;
 
     @Column(nullable = false)
-    private String declarationNumber;
+    private String fileName;
 
     @Column(nullable = false)
-    private LocalDate startDate;
+    private String fileType;
 
     @Column(nullable = false)
-    private LocalDate endDate;
+    private String filePath;
 
     @Column(nullable = false)
-    private Boolean isActive;
+    private LocalDateTime uploadedAt;
 
-    @Column(length = 500)
-    private String notes;
+    @Column(columnDefinition = "TEXT")
+    private String description;
 } 

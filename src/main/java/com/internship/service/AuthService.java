@@ -5,7 +5,7 @@ import com.internship.dto.LoginRequest;
 import com.internship.dto.SignUpRequest;
 
 public interface AuthService {
-    AuthResponse signup(SignUpRequest request);
+    AuthResponse register(SignUpRequest request);
     AuthResponse login(LoginRequest request);
     void sendPasswordResetEmail(String email);
     void resetPassword(String token, String password);

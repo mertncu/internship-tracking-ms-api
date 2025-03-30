@@ -1,22 +1,50 @@
-# Database Configuration
-spring.datasource.url=jdbc:postgresql://localhost:5432/your_database_name
-spring.datasource.username=your_username
-spring.datasource.password=your_password
-
-# JPA/Hibernate Configuration
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-spring.jpa.properties.hibernate.format_sql=true
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
-
 # JWT Configuration
-app.jwt.secret=your_jwt_secret_key
+app.jwt.secret=your-secret-jwt-key
 app.jwt.expiration=86400000
 
+# PostgreSQL Configuration
+spring.datasource.url=jdbc:postgresql://localhost:5432/internship_db
+spring.datasource.username=your-username
+spring.datasource.password=your-password
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+# JPA Configuration
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.properties.hibernate.format_sql=true
+
+# Server Configuration
+server.port=8080
+
+# H2 Database Configuration (in-memory)
+spring.h2.console.enabled=true
+spring.h2.console.path=/h2-console
+
+# Disable SQL init (we will use JPA's auto-ddl)
+spring.sql.init.mode=never
+
+# Logging Configuration
+logging.level.org.springframework.security=DEBUG
+logging.level.com.internship=DEBUG
+logging.level.org.hibernate.SQL=DEBUG
+logging.level.org.hibernate.type.descriptor.sql=TRACE
+
+# Email Configuration
+spring.mail.host=smtp-mail.outlook.com
+spring.mail.port=587
+spring.mail.username=your-email
+spring.mail.password=your-email-password
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+
+# Email Sender Configuration
+spring.mail.properties.mail.from=your-email
+
 # Swagger UI Configuration
-springdoc.swagger-ui.path=/swagger-ui.html
 springdoc.api-docs.path=/v3/api-docs
+springdoc.swagger-ui.path=/swagger-ui.html
+springdoc.swagger-ui.enabled=true
 springdoc.swagger-ui.operationsSorter=method
 springdoc.swagger-ui.tagsSorter=alpha
-springdoc.swagger-ui.tryItOutEnabled=true
-springdoc.swagger-ui.filter=true 
+springdoc.packages-to-scan=com.internship.controller

@@ -4,15 +4,13 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.DayOfWeek;
-import java.time.LocalDate;
 
 @Entity
 @Table(name = "application_working_days")
-@Getter
-@Setter
+@Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class ApplicationWorkingDays {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,16 +20,13 @@ public class ApplicationWorkingDays {
     @JoinColumn(name = "internship_id", nullable = false)
     private Internship internship;
 
-    @Column(nullable = false)
-    private LocalDate date;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private DayOfWeek dayOfWeek;
 
     @Column(nullable = false)
-    private Boolean isWorkingDay;
+    private String startTime;
 
-    @Column
-    private String note; // Tatil, yarım gün vb. açıklamalar için
+    @Column(nullable = false)
+    private String endTime;
 } 

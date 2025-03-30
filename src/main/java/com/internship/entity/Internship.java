@@ -8,15 +8,17 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 @Entity
 @Table(name = "internships")
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Internship {
     @Id
@@ -28,6 +30,12 @@ public class Internship {
     @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
     @JsonIdentityReference(alwaysAsId = true)
     private User student;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "advisor_id")
+    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
+    @JsonIdentityReference(alwaysAsId = true)
+    private User advisor;
 
     @Column(nullable = false)
     private String companyName;
@@ -47,22 +55,41 @@ public class Internship {
     @Column(nullable = false)
     private Integer workDays;
 
+    @Column(nullable = false)
+    private Boolean insuranceSupport;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private InternshipStatus status;
+    @Builder.Default
+    private InternshipStatus status = InternshipStatus.PENDING;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "advisor_id")
-    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
-    @JsonIdentityReference(alwaysAsId = true)
-    private User facultyAdvisor;
-
-    @Column(columnDefinition = "text")
     private String rejectionReason;
 
-    @Enumerated(EnumType.STRING)
+    private String documentPath;
+
+    private String documentName;
+
+    private String documentType;
+
+    private LocalDateTime documentUploadDate;
+
+    @OneToMany(mappedBy = "internship", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Document> documents;
+
+    @OneToMany(mappedBy = "internship", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ApplicationWorkingDays> workingDays;
+
+    @OneToMany(mappedBy = "internship", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ApplicationApproval> approvals;
+
+    @OneToOne(mappedBy = "internship", cascade = CascadeType.ALL, orphanRemoval = true)
+    private SGKDeclaration sgkDeclaration;
+
     @Column(nullable = false)
-    private InternshipType type;
+    private Boolean isPaid;
 
     @Column(nullable = false)
     private Boolean parentalInsuranceCoverage;
@@ -76,24 +103,19 @@ public class Internship {
     @Column
     private String bankBranch;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Boolean isPaid;
-
-    @OneToMany(mappedBy = "internship", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ApplicationWorkingDays> workingDays;
-
-    @OneToMany(mappedBy = "internship", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ApplicationApproval> approvals;
-
-    @OneToOne(mappedBy = "internship", cascade = CascadeType.ALL, orphanRemoval = true)
-    private SGKDeclaration sgkDeclaration;
+    private InternshipType type;
 
     @Column(nullable = false)
-    private Boolean insuranceSupport;
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column(columnDefinition = "text")
-    private String description;
+    public User getAdvisor() {
+        return advisor;
+    }
 
-    @Column
-    private String documentPath;
+    public void setAdvisor(User advisor) {
+        this.advisor = advisor;
+    }
 } 

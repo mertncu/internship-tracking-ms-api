@@ -11,7 +11,6 @@ import java.util.List;
 @Repository
 public interface InternshipRepository extends JpaRepository<Internship, Long> {
     List<Internship> findByStudent(User student);
-    List<Internship> findByFacultyAdvisor(User advisor);
+    List<Internship> findByAdvisor(User advisor);
     List<Internship> findByStatus(InternshipStatus status);
-    List<Internship> findByStudentAndStatus(User student, InternshipStatus status);
 } 

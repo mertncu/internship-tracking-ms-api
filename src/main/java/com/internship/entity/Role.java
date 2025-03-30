@@ -2,16 +2,16 @@ package com.internship.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+@Entity
+@Table(name = "roles")
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Table(name = "roles", uniqueConstraints = {
-    @UniqueConstraint(columnNames = "name")
-})
 public class Role {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,10 +20,11 @@ public class Role {
     @Column(nullable = false, unique = true)
     private String name;
 
-    @Column
-    private String description;
-
     public String getName() {
         return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 } 

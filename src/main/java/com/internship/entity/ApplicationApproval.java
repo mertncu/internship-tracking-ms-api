@@ -7,11 +7,10 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "application_approvals")
-@Getter
-@Setter
+@Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class ApplicationApproval {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,19 +24,29 @@ public class ApplicationApproval {
     @JoinColumn(name = "approver_id", nullable = false)
     private User approver;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String approverRole; // FACULTY_ADVISOR, DEPARTMENT_COORDINATOR, UNIVERSITY_COORDINATOR
+    private InternshipStatus status;
+
+    @Column(columnDefinition = "TEXT")
+    private String comment;
 
     @Column(nullable = false)
     private LocalDateTime actionDate;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private InternshipStatus resultStatus;
+    public void setStatus(InternshipStatus status) {
+        this.status = status;
+    }
 
-    @Column
-    private String comments; // Red veya revizyon durumunda açıklama
+    public void setComment(String comment) {
+        this.comment = comment;
+    }
 
-    @Column(nullable = false)
-    private Boolean isApproved;
+    public void setActionDate(LocalDateTime actionDate) {
+        this.actionDate = actionDate;
+    }
+
+    public Internship getInternship() {
+        return internship;
+    }
 } 
