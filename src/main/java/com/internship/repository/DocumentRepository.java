@@ -12,9 +12,9 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     
     List<Document> findByInternshipId(Long internshipId);
     
-    List<Document> findByInternshipIdAndFileType(Long internshipId, String fileType);
+//    List<Document> findByInternshipIdAndFileType(Long internshipId, String fileType);
     
-    Optional<Document> findFirstByInternshipIdOrderByUploadedAtDesc(Long internshipId);
+//    Optional<Document> findFirstByInternshipIdOrderByUploadedAtDesc(Long internshipId);
     
-    void deleteByInternshipId(Long internshipId);
+//    void deleteByInternshipId(Long internshipId);
 } 

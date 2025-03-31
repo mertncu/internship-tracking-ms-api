@@ -47,9 +47,9 @@ public class DocumentController {
         Document document = documentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Belge bulunamadı"));
 
-        if (!userSecurity.canAccessInternship(document.getInternship().getId())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
+//        if (!userSecurity.canAccessInternship(document.getInternship().getId())) {
+//            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+//        }
 
         try {
             Path filePath = Paths.get(document.getFilePath());
@@ -75,10 +75,10 @@ public class DocumentController {
     public ResponseEntity<Map<String, String>> deleteDocument(@PathVariable Long id) {
         Document document = documentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Belge bulunamadı"));
-
-        if (!userSecurity.canAccessInternship(document.getInternship().getId())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
+//
+//        if (!userSecurity.canAccessInternship(document.getInternship().getId())) {
+//            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+//        }
 
         try {
             // Dosyayı fiziksel olarak silmeye çalış

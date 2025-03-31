@@ -16,9 +16,8 @@ public class Document {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "internship_id", nullable = false)
-    private Internship internship;
+    @Column(nullable = false, name = "internship_id")
+    private Long internshipId;
 
     @Column(nullable = false)
     private String fileName;

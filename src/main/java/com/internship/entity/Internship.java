@@ -76,7 +76,12 @@ public class Internship {
 
     private LocalDateTime documentUploadDate;
 
-    @OneToMany(mappedBy = "internship", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinTable(
+        name = "documents",
+        joinColumns = @JoinColumn(name = "id"),
+        inverseJoinColumns = @JoinColumn(name = "internship_id")
+    )
+    @OneToMany(fetch = FetchType.EAGER)
     private List<Document> documents;
 
     @OneToMany(mappedBy = "internship", cascade = CascadeType.ALL, orphanRemoval = true)
