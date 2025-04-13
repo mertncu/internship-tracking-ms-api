@@ -9,6 +9,7 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -76,13 +77,9 @@ public class Internship {
 
     private LocalDateTime documentUploadDate;
 
-    @JoinTable(
-        name = "documents",
-        joinColumns = @JoinColumn(name = "id"),
-        inverseJoinColumns = @JoinColumn(name = "internship_id")
-    )
-    @OneToMany(fetch = FetchType.EAGER)
-    private List<Document> documents;
+    @OneToMany(mappedBy = "internship", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties("internship")
+    private List<Document> documents = new ArrayList<>();
 
     @OneToMany(mappedBy = "internship", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ApplicationWorkingDays> workingDays;

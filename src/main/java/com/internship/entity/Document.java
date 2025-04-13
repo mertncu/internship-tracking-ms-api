@@ -1,5 +1,6 @@
 package com.internship.entity;
 
+import com.fasterxml.jackson.annotation.*;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -11,18 +12,22 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Document {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, name = "internship_id")
-    private Long internshipId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "internship_id", referencedColumnName = "id", nullable = false)
+    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
+    @JsonIdentityReference(alwaysAsId = true)
+    private Internship internship;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 255)
     private String fileName;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private String fileType;
 
     @Column(nullable = false)
@@ -33,4 +38,11 @@ public class Document {
 
     @Column(columnDefinition = "TEXT")
     private String description;
+
+    @PrePersist
+    protected void onCreate() {
+        if (uploadedAt == null) {
+            uploadedAt = LocalDateTime.now();
+        }
+    }
 } 
