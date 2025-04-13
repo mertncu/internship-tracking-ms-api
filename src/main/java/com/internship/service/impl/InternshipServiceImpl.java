@@ -53,6 +53,13 @@ public class InternshipServiceImpl implements InternshipService {
                 .insuranceSupport(request.getInsuranceSupport() != null ? request.getInsuranceSupport() : false)
                 .parentalInsuranceCoverage(request.getParentalInsuranceCoverage() != null ? request.getParentalInsuranceCoverage() : false)
                 .build();
+
+        // Eğer ücretli staj ise banka bilgilerini ekle
+        if (Boolean.TRUE.equals(request.getIsPaid())) {
+            internship.setCompanyIBAN(request.getCompanyIBAN());
+            internship.setBankName(request.getBankName());
+            internship.setBankBranch(request.getBankBranch());
+        }
         
         return internshipRepository.save(internship);
     }

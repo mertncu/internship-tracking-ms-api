@@ -32,15 +32,25 @@ public class InternshipRequest {
     @NotNull(message = "Staj tipi zorunludur")
     private InternshipType type;
     
+    @NotNull(message = "Ücretli staj bilgisi zorunludur")
     private Boolean isPaid;
     
     private Boolean insuranceSupport;
     
     private Boolean parentalInsuranceCoverage;
     
+    // Banka bilgileri - ücretli staj için zorunlu
     private String companyIBAN;
-
     private String bankName;
-    
     private String bankBranch;
+
+    // Banka bilgilerinin validasyonu için yardımcı metod
+    public boolean isValidBankInfo() {
+        if (Boolean.TRUE.equals(isPaid)) {
+            return companyIBAN != null && !companyIBAN.trim().isEmpty() &&
+                   bankName != null && !bankName.trim().isEmpty() &&
+                   bankBranch != null && !bankBranch.trim().isEmpty();
+        }
+        return true;
+    }
 } 

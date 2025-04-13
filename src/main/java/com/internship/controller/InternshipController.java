@@ -37,7 +37,12 @@ public class InternshipController {
     @Operation(summary = "Yeni staj başvurusu oluştur")
     @PostMapping
     @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<Internship> createInternship(@RequestBody InternshipRequest request) {
+    public ResponseEntity<Internship> createInternship(@Valid @RequestBody InternshipRequest request) {
+        // Ücretli staj için banka bilgilerini kontrol et
+        if (Boolean.TRUE.equals(request.getIsPaid()) && !request.isValidBankInfo()) {
+            throw new IllegalArgumentException("Ücretli staj için banka bilgileri (IBAN, banka adı ve şube) zorunludur.");
+        }
+        
         Internship internship = internshipService.createInternship(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(internship);
     }
