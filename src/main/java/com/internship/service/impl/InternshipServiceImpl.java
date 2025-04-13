@@ -12,9 +12,13 @@ import com.internship.service.InternshipService;
 import com.internship.service.NotificationService;
 import com.internship.security.UserSecurity;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.util.StringUtils;
+import com.internship.exception.ResourceNotFoundException;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,6 +29,7 @@ import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +40,7 @@ public class InternshipServiceImpl implements InternshipService {
     private final NotificationService notificationService;
     private final UserSecurity userSecurity;
     private final DocumentRepository documentRepository;
+    private static final Logger logger = LoggerFactory.getLogger(InternshipServiceImpl.class);
 
     @Override
     public Internship createInternship(InternshipRequest request) {
@@ -83,123 +89,105 @@ public class InternshipServiceImpl implements InternshipService {
 
     @Override
     public List<Internship> getInternshipsByAdvisor(User advisor) {
-        if (!advisor.getRoles().stream().anyMatch(role -> role.getName().equals("ROLE_FACULTY_ADVISOR"))) {
-            throw new RuntimeException("User is not an advisor");
-        }
         return internshipRepository.findByAdvisor(advisor);
     }
 
     @Override
     public Internship assignAdvisor(Long internshipId, Long advisorId) {
-        Internship internship = getInternshipById(internshipId);
+        Internship internship = internshipRepository.findById(internshipId)
+                .orElseThrow(() -> new ResourceNotFoundException("Internship not found with id: " + internshipId));
+        
         User advisor = userRepository.findById(advisorId)
-                .orElseThrow(() -> new RuntimeException("Advisor not found with id: " + advisorId));
-        
-        if (!advisor.getRoles().stream().anyMatch(role -> role.getName().equals("ROLE_FACULTY_ADVISOR"))) {
-            throw new RuntimeException("User is not an advisor");
-        }
-        
+                .orElseThrow(() -> new ResourceNotFoundException("Advisor not found with id: " + advisorId));
+
         internship.setAdvisor(advisor);
-        internshipRepository.save(internship);
-        
-        notificationService.createNotification(
-            advisor,
-            "New Internship Assignment",
-            "You have been assigned as advisor for " + internship.getStudent().getFirstName() + "'s internship",
-            NotificationType.ADVISOR_ASSIGNMENT
-        );
-        
-        return internship;
+        return internshipRepository.save(internship);
     }
 
     @Override
     @Transactional
     public String uploadDocument(Long internshipId, MultipartFile file, String documentType) {
-        // 1. Staj başvurusunun varlığını kontrol et
-        Internship internship = internshipRepository.findById(internshipId)
-                .orElseThrow(() -> new RuntimeException("Staj başvurusu bulunamadı: " + internshipId));
-
-        // 2. Dosya kontrollerini yap
-        validateFile(file);
-        String originalFilename = getValidFileName(file);
-        validateFileExtension(originalFilename);
+        logger.info("Attempting to upload document for internship ID: {} with type: {}", internshipId, documentType);
+        
+        if (file == null || file.isEmpty()) {
+            logger.error("File is null or empty for internship ID: {}", internshipId);
+            throw new IllegalArgumentException("File cannot be null or empty");
+        }
 
         try {
-            // 3. Dosyayı kaydet
-            String uploadDir = createUploadDirectory(internshipId, documentType);
-            String newFileName = generateUniqueFileName(internshipId, originalFilename);
-            String filePath = saveFile(file, uploadDir, newFileName);
+            Internship internship = internshipRepository.findById(internshipId)
+                    .orElseThrow(() -> {
+                        logger.error("Internship not found with ID: {}", internshipId);
+                        return new ResourceNotFoundException("Internship not found with id: " + internshipId);
+                    });
 
-            // 4. Document entity'sini oluştur
+            String fileName = StringUtils.cleanPath(file.getOriginalFilename());
+            if (fileName.contains("..")) {
+                logger.error("Invalid file path sequence found in filename: {}", fileName);
+                throw new IllegalArgumentException("Invalid file path sequence in filename");
+            }
+
+            String fileType = file.getContentType();
+            if (!isValidFileType(fileType)) {
+                logger.error("Invalid file type: {} for internship ID: {}", fileType, internshipId);
+                throw new IllegalArgumentException("Invalid file type: " + fileType);
+            }
+
+            String uploadDir = createUploadDirectory(internshipId, documentType);
+            String newFileName = generateUniqueFileName(internshipId, fileName);
+            String filePath = saveFile(file, uploadDir, newFileName);
+            
             Document document = Document.builder()
                     .internship(internship)
-                    .fileName(originalFilename)
+                    .fileName(fileName)
                     .fileType(documentType)
                     .filePath(filePath)
-                    .description("Staj için " + documentType + " belgesi")
+                    .uploadedAt(LocalDateTime.now())
                     .build();
 
-            // 5. Document'ı kaydet
-            document = documentRepository.save(document);
+            documentRepository.save(document);
+            logger.info("Document successfully uploaded and saved for internship ID: {}", internshipId);
 
-            // 6. Internship'i güncelle
-            updateInternshipDocuments(internship, document);
+            notificationService.sendNotification(
+                internship.getStudent().getId(),
+                "A new document has been uploaded for your internship",
+                NotificationType.DOCUMENT_UPLOAD
+            );
 
-            // 7. Danışmanı bilgilendir
-            notifyAdvisor(internship, documentType);
+            return filePath;
 
-            return document.getFilePath();
-        } catch (Exception ex) {
-            throw new RuntimeException("Belge yükleme işlemi başarısız: " + ex.getMessage(), ex);
+        } catch (IOException e) {
+            logger.error("Failed to save file for internship ID: {}", internshipId, e);
+            throw new RuntimeException("Failed to save file: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("Unexpected error while uploading document for internship ID: {}", internshipId, e);
+            throw new RuntimeException("Failed to upload document: " + e.getMessage());
         }
     }
 
-    private void validateFile(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            throw new RuntimeException("Yüklenen dosya boş");
-        }
-
-        if (file.getSize() > 10 * 1024 * 1024) { // 10MB limit
-            throw new RuntimeException("Dosya boyutu 10MB'dan küçük olmalıdır");
-        }
+    private boolean isValidFileType(String fileType) {
+        return fileType != null && (
+            fileType.equals("application/pdf") ||
+            fileType.equals("application/msword") ||
+            fileType.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+        );
     }
 
-    private String getValidFileName(MultipartFile file) {
-        String originalFilename = file.getOriginalFilename();
-        if (originalFilename == null || originalFilename.contains("..")) {
-            throw new RuntimeException("Dosya adı geçersiz");
-        }
-        return originalFilename;
-    }
-
-    private void validateFileExtension(String fileName) {
-        String fileExtension = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
-        List<String> allowedExtensions = List.of("pdf", "doc", "docx", "jpg", "jpeg", "png");
-        
-        if (!allowedExtensions.contains(fileExtension)) {
-            throw new RuntimeException("Desteklenmeyen dosya türü. Sadece PDF, DOC, DOCX, JPG, JPEG ve PNG dosyaları yüklenebilir.");
-        }
-    }
-
-    private String createUploadDirectory(Long internshipId, String documentType) {
-        String uploadDir = "uploads/documents/" + internshipId + "/" + documentType.toLowerCase();
-        File directory = new File(uploadDir);
-        if (!directory.exists() && !directory.mkdirs()) {
-            throw new RuntimeException("Klasör oluşturulamadı: " + uploadDir);
-        }
+    private String createUploadDirectory(Long internshipId, String documentType) throws IOException {
+        String uploadDir = String.format("uploads/internship_%d/%s", internshipId, documentType);
+        Files.createDirectories(Paths.get(uploadDir));
         return uploadDir;
     }
 
     private String generateUniqueFileName(Long internshipId, String originalFilename) {
-        String timestamp = String.valueOf(System.currentTimeMillis());
-        String sanitizedFilename = originalFilename.replaceAll("[^a-zA-Z0-9.-]", "_");
-        return internshipId + "_" + timestamp + "_" + sanitizedFilename;
+        String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        return String.format("%d_%s%s", internshipId, UUID.randomUUID().toString(), extension);
     }
 
     private String saveFile(MultipartFile file, String uploadDir, String newFileName) throws IOException {
         Path targetLocation = Paths.get(uploadDir, newFileName);
         Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
-        return uploadDir + "/" + newFileName;
+        return targetLocation.toString();
     }
 
     private void updateInternshipDocuments(Internship internship, Document document) {

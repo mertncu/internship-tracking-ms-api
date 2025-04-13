@@ -75,16 +75,23 @@ public class InternshipController {
 
     @Operation(summary = "Danışmanın stajlarını listele")
     @GetMapping("/advisor/{advisorId}")
+    @PreAuthorize("hasRole('FACULTY_ADVISOR') or hasRole('DEPARTMENT_COORDINATOR') or hasRole('UNIVERSITY_COORDINATOR')")
     public ResponseEntity<List<Internship>> getAdvisorInternships(@PathVariable Long advisorId) {
-        User currentUser = userSecurity.getCurrentUser();
-        User advisor = userService.getUserById(advisorId);
+        try {
+            User advisor = userService.getUserById(advisorId);
+            
+            // Yetki kontrolü
+            User currentUser = userSecurity.getCurrentUser();
+            if (!userSecurity.hasAnyRole("DEPARTMENT_COORDINATOR", "UNIVERSITY_COORDINATOR") &&
+                !currentUser.getId().equals(advisorId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
 
-        if (!userSecurity.hasAnyRole("DEPARTMENT_COORDINATOR", "UNIVERSITY_COORDINATOR") &&
-            !currentUser.getId().equals(advisorId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            List<Internship> internships = internshipService.getInternshipsByAdvisor(advisor);
+            return ResponseEntity.ok(internships);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
         }
-
-        return ResponseEntity.ok(internshipService.getInternshipsByAdvisor(advisor));
     }
 
     @GetMapping
