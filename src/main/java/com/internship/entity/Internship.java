@@ -80,14 +80,14 @@ public class Internship {
 
     @OneToMany(mappedBy = "internship", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnoreProperties("internship")
-    private List<Document> documents = new ArrayList<>();
+    private Set<Document> documents = new HashSet<>();
 
     @OneToMany(mappedBy = "internship", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ApplicationWorkingDays> workingDays;
+    private Set<ApplicationWorkingDays> workingDays = new HashSet<>();
 
     @OneToMany(mappedBy = "internship", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
-    private List<ApplicationApproval> approvals;
+    private Set<ApplicationApproval> approvals = new HashSet<>();
 
     @OneToOne(mappedBy = "internship", cascade = CascadeType.ALL, orphanRemoval = true)
     private SGKDeclaration sgkDeclaration;

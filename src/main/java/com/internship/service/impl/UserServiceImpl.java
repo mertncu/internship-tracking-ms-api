@@ -41,7 +41,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return userRepository.findByEmail(username)
+        return userRepository.findByEmailWithRoles(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + username));
     }
 
@@ -104,7 +104,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     @Override
     public User getUserById(Long id) {
-        return userRepository.findById(id)
+        return userRepository.findByIdWithRoles(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
     }
 
@@ -117,12 +117,12 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     public List<User> getUsersByRole(String roleName) {
         Role role = roleRepository.findByName(roleName)
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found: " + roleName));
-        return userRepository.findByRoles(role);
+        return userRepository.findByRolesWithDetails(role);
     }
 
     @Override
     public Optional<User> findByEmail(String email) {
-        return userRepository.findByEmail(email);
+        return userRepository.findByEmailWithRoles(email);
     }
 
     @Override
@@ -132,7 +132,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     @Override
     public void initiatePasswordReset(String email) {
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmailWithRoles(email)
                 .orElseThrow(() -> new RuntimeException("Bu email adresi ile kayıtlı kullanıcı bulunamadı."));
 
         // Check existing tokens and invalidate them if needed

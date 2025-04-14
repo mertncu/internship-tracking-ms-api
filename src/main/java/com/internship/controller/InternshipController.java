@@ -61,16 +61,30 @@ public class InternshipController {
 
     @Operation(summary = "Öğrencinin stajlarını listele")
     @GetMapping("/student/{studentId}")
+    @PreAuthorize("hasRole('STUDENT') or hasRole('FACULTY_ADVISOR') or hasRole('DEPARTMENT_COORDINATOR') or hasRole('UNIVERSITY_COORDINATOR')")
     public ResponseEntity<List<Internship>> getStudentInternships(@PathVariable Long studentId) {
-        User currentUser = userSecurity.getCurrentUser();
-        User student = userService.getUserById(studentId);
+        try {
+            User currentUser = userSecurity.getCurrentUser();
+            User student = userService.getUserById(studentId);
 
-        if (!userSecurity.hasAnyRole("DEPARTMENT_COORDINATOR", "UNIVERSITY_COORDINATOR") &&
-            !currentUser.getId().equals(studentId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            // Yetki kontrolü - öğrenci kendisi mi, danışman kendisine bağlı öğrenci mi, veya koordinatör mü?
+            if (!userSecurity.isCurrentUser(studentId) && !userSecurity.hasAnyRole("DEPARTMENT_COORDINATOR", "UNIVERSITY_COORDINATOR")) {
+                // Danışman ise, öğrencinin kendisine atanmış olup olmadığını kontrol et
+                if (userSecurity.hasRole("FACULTY_ADVISOR")) {
+                    boolean isAdvisorOfStudent = student.getFacultyAdvisor() != null && 
+                                                student.getFacultyAdvisor().getId().equals(currentUser.getId());
+                    if (!isAdvisorOfStudent) {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                    }
+                } else {
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                }
+            }
+
+            return ResponseEntity.ok(internshipService.getInternshipsByStudent(student));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-
-        return ResponseEntity.ok(internshipService.getInternshipsByStudent(student));
     }
 
     @Operation(summary = "Danışmanın stajlarını listele")

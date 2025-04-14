@@ -28,6 +28,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 
@@ -73,35 +74,69 @@ public class InternshipServiceImpl implements InternshipService {
 
     @Override
     public Internship getInternshipById(Long id) {
-        return internshipRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Internship not found with id: " + id));
+        return internshipRepository.findByIdWithDocumentsAndApprovals(id)
+                .orElseThrow(() -> {
+                    logger.error("Internship not found with ID: {}", id);
+                    return new ResourceNotFoundException("Internship not found with id: " + id);
+                });
     }
 
     @Override
     public List<Internship> getAllInternships() {
-        return internshipRepository.findAll();
+        // Artık koleksiyonlar Set olduğu için bir seferde çekebiliriz
+        List<Internship> internships = internshipRepository.findAllWithDetails();
+        logger.debug("Loaded {} internships with all details", internships.size());
+        return internships;
     }
 
     @Override
     public List<Internship> getInternshipsByStudent(User student) {
-        return internshipRepository.findByStudent(student);
+        // Set tipine dönüştürüldüğü için artık tüm ilişkili verileri tek seferde çekebiliriz
+        List<Internship> internships = internshipRepository.findByStudentWithAllDetails(student);
+        logger.debug("Loaded {} internships for student ID: {}", internships.size(), student.getId());
+        return internships;
     }
 
     @Override
     public List<Internship> getInternshipsByAdvisor(User advisor) {
-        return internshipRepository.findByAdvisor(advisor);
+        // Set tipine dönüştürüldüğü için artık tüm ilişkili verileri tek seferde çekebiliriz
+        List<Internship> internships = internshipRepository.findByAdvisorWithAllDetails(advisor);
+        logger.debug("Loaded {} internships for advisor ID: {}", internships.size(), advisor.getId());
+        return internships;
     }
 
     @Override
     public Internship assignAdvisor(Long internshipId, Long advisorId) {
-        Internship internship = internshipRepository.findById(internshipId)
-                .orElseThrow(() -> new ResourceNotFoundException("Internship not found with id: " + internshipId));
+        Internship internship = internshipRepository.findByIdWithDocumentsAndApprovals(internshipId)
+                .orElseThrow(() -> {
+                    logger.error("Internship not found with ID: {}", internshipId);
+                    return new ResourceNotFoundException("Internship not found with id: " + internshipId);
+                });
         
-        User advisor = userRepository.findById(advisorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Advisor not found with id: " + advisorId));
+        User advisor = userRepository.findByIdWithRoles(advisorId)
+                .orElseThrow(() -> {
+                    logger.error("Advisor not found with ID: {}", advisorId);
+                    return new ResourceNotFoundException("Advisor not found with id: " + advisorId);
+                });
+
+        // Danışmanın geçerli rolü var mı kontrol et
+        if (advisor.getRoles().stream().noneMatch(role -> role.getName().equals("ROLE_FACULTY_ADVISOR"))) {
+            logger.error("User with ID: {} does not have FACULTY_ADVISOR role", advisorId);
+            throw new IllegalArgumentException("User is not a faculty advisor");
+        }
 
         internship.setAdvisor(advisor);
-        return internshipRepository.save(internship);
+        Internship savedInternship = internshipRepository.save(internship);
+        
+        // Öğrenciye bildirim gönder
+        notificationService.sendNotification(
+            internship.getStudent().getId(),
+            "Staj başvurunuz için danışman atandı: " + advisor.getFirstName() + " " + advisor.getLastName(),
+            NotificationType.ADVISOR_ASSIGNMENT
+        );
+        
+        logger.info("Advisor (ID: {}) assigned to internship ID: {}", advisorId, internshipId);
+        return savedInternship;
     }
 
     @Override
@@ -115,7 +150,7 @@ public class InternshipServiceImpl implements InternshipService {
         }
 
         try {
-            Internship internship = internshipRepository.findById(internshipId)
+            Internship internship = internshipRepository.findByIdWithDocuments(internshipId)
                     .orElseThrow(() -> {
                         logger.error("Internship not found with ID: {}", internshipId);
                         return new ResourceNotFoundException("Internship not found with id: " + internshipId);
@@ -192,7 +227,7 @@ public class InternshipServiceImpl implements InternshipService {
 
     private void updateInternshipDocuments(Internship internship, Document document) {
         if (internship.getDocuments() == null) {
-            internship.setDocuments(new ArrayList<>());
+            internship.setDocuments(new HashSet<>());
         }
         internship.getDocuments().add(document);
         internshipRepository.save(internship);
