@@ -17,7 +17,10 @@ import java.util.Set;
 
 @Entity
 @Table(name = "internships")
-@Data
+@Getter
+@Setter
+@ToString(exclude = {"documents", "workingDays", "approvals", "reports", "sgkDeclaration"})
+@EqualsAndHashCode(exclude = {"documents", "workingDays", "approvals", "reports", "sgkDeclaration"})
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -88,6 +91,10 @@ public class Internship {
     @OneToMany(mappedBy = "internship", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private Set<ApplicationApproval> approvals = new HashSet<>();
+
+    @OneToMany(mappedBy = "internship", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties("internship")
+    private Set<InternshipReport> reports = new HashSet<>();
 
     @OneToOne(mappedBy = "internship", cascade = CascadeType.ALL, orphanRemoval = true)
     private SGKDeclaration sgkDeclaration;

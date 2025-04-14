@@ -7,7 +7,10 @@ import java.time.DayOfWeek;
 
 @Entity
 @Table(name = "application_working_days")
-@Data
+@Getter
+@Setter
+@ToString(exclude = "internship")
+@EqualsAndHashCode(exclude = "internship")
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor

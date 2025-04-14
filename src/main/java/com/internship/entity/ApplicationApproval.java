@@ -8,7 +8,10 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "application_approvals")
-@Data
+@Getter
+@Setter
+@ToString(exclude = {"internship", "approver"})
+@EqualsAndHashCode(exclude = {"internship", "approver"})
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor

@@ -1,5 +1,6 @@
 package com.internship.entity;
 
+import com.fasterxml.jackson.annotation.*;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -7,10 +8,14 @@ import java.time.LocalDate;
 
 @Entity
 @Table(name = "sgk_declarations")
-@Data
+@Getter
+@Setter
+@ToString(exclude = "internship")
+@EqualsAndHashCode(exclude = "internship")
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class SGKDeclaration {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -18,6 +23,8 @@ public class SGKDeclaration {
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "internship_id", nullable = false)
+    @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
+    @JsonIdentityReference(alwaysAsId = true)
     private Internship internship;
 
     @Column(nullable = false)

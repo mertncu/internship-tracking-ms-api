@@ -8,7 +8,10 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "documents")
-@Data
+@Getter
+@Setter
+@ToString(exclude = "internship")
+@EqualsAndHashCode(exclude = "internship")
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
